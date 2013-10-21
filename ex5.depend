@@ -1,0 +1,35 @@
+# depslib dependency file v1.0
+1382192777 source:c:\p\ann\ex5\main.c
+	"main.h"
+
+1382192754 c:\p\ann\ex5\main.h
+	"matrix.h"
+	<stdio.h>
+	<stdlib.h>
+	<windows.h>
+	<stdbool.h>
+	<math.h>
+	<time.h>
+
+1382190400 c:\p\ann\ex5\matrix.h
+
+1382190123 source:c:\p\ann\ex5\matrix.c
+	"matrix.h"
+
+1382276633 source:c:\users\niklas\documents\dropbox\p\ann\ex5\matrix.c
+	"matrix.h"
+
+1382190400 c:\users\niklas\documents\dropbox\p\ann\ex5\matrix.h
+
+1382276611 source:c:\users\niklas\documents\dropbox\p\ann\ex5\main.c
+	"main.h"
+
+1382275123 c:\users\niklas\documents\dropbox\p\ann\ex5\main.h
+	"matrix.h"
+	<stdio.h>
+	<stdlib.h>
+	<windows.h>
+	<stdbool.h>
+	<math.h>
+	<time.h>
+
