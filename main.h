@@ -14,6 +14,7 @@
 void init();
 void forward(int n);
 void backward(int n);
+void next();
 
 // Init
 float *read_patterns(int p, char *file_name);
@@ -31,6 +32,5 @@ float h();
 
 // Various
 float add_to_file(char *file_name, int i, float f);
-
 
 #endif // MAIN_H_INCLUDED

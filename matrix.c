@@ -98,7 +98,11 @@ float **new_mat_zero(int m, int n) {
     return mat;
 }
 float *new_vec(int d) {return malloc(d * sizeof(float));}
-float *new_vec_zero(int d) {return calloc(d, sizeof(float));}
+float *new_vec_zero(int d) {
+    float *r = malloc(d * sizeof *r);
+    for (int i=0;i<d; i++) r[i] = 0;
+    return r;
+}
 
 
 

@@ -4,11 +4,12 @@
 int m = 2; // dimension of input units vector
 int q = 5; // dimension of hidden units vector
 int p_t = 1000; // number of patterns in training set
-float rand_coeff = 0.3;
-float rand_d = 0;// -0.15;?
-float eta = 0.1;
+bool rand_mode = true;
+float rand_coeff = 1;
+float rand_d = 0.5;// -0.15;?
+float eta = 0.0;
 
-int n_max = 2000;
+int n_max = 20000;
 
 // Network states
 float *I; // Laser intensity vector
@@ -26,10 +27,13 @@ float *Wo;  // output weights
 float ***lambda; // Change-in-activation-states-thingy
 float ***lambda_next; // Change-in-activation-states-thingy
 
+float sdev = 46.8754;
+float mean = 59.894;
+
 int main() {
     init();
     training();
-    simulate(1);
+//    simulate(1);
 }
 
 void training() {
@@ -38,7 +42,7 @@ void training() {
     unlink("energy.txt");
     FILE *file = fopen("energy.txt", "w");
 
-    for (int n=0;n<n_max; n++) {
+    for (int n=1; n<=n_max; n++) {
 
         if (p>=998) p = 0;
         xi[0] = I[p];
@@ -46,12 +50,33 @@ void training() {
         zeta = I[p+2];
         p++;
 
+//        printf("(n=%d) Wa:\n", n);
+//        print_mat(Wa, q, q);
+//
+//        printf("Wb:\n");
+//        print_mat(Wb, q, (m+1));
+
         forward(n);
         H_sum += h();
         fprintf(file, "%d\t%f\n", n, (H_sum/n));
         backward(n);
+        next();
+
+        if (n%100==0) {
+            printf("hej! V:\n");
+//            print_vec(V, q);
+
+//            printf("n: %d, gdiff: %f\n", n, greatest_diff(V, q));
+
+        }
+//        printf("n:%d, O:%f\n", n, O);
+//        print_vec(V_next, q);
+
+
     }
     printf("Energy: %f\n", (H_sum/n_max));
+
+
     fclose(file);
 }
 
@@ -67,7 +92,7 @@ void simulate(int k_max) {
 
     int p = 0;
     int k = 0;
-    for (int n=0;n<n_max; n++) {
+    for (int n=1; n<=n_max; n++) {
 
         if (p>=998) p = 0;
         if (k==k_max) {
@@ -81,7 +106,7 @@ void simulate(int k_max) {
         p++;
 
         forward(n);
-        O = k+5;
+//        O = k+5;
         fprintf(file, "%d\t%f\n", n, O);
         output[k+2] = O;
 
@@ -90,16 +115,19 @@ void simulate(int k_max) {
 }
 
 void forward(int n) {
-    float *V_next = new_vec(q);
+
+    V_next = new_vec_zero(q);
     // Calculate hidden states
     for (int j=0;j<q;j++) {
         V_next[j] = g(vec_vec_mult(Wa[j], V, q) + vec_vec_mult(Wb[j], xi, (m+1)));
+//        printf("asdf %f %f\n", vec_vec_mult(Wa[j], V, q), vec_vec_mult(Wb[j], xi, (m+1)));
     }
-    // "Go to" next state
-    free(V);
-    V = V_next;
+
     // Calculate output state
-    O = vec_vec_mult(Wo, V_next, q);
+    O = vec_vec_mult(Wo, V, q);
+
+
+
 }
 
 void backward(int n) {
@@ -110,7 +138,12 @@ void backward(int n) {
 
     // Use vector instead of diagonal matrix
     float *phi_vec = new_vec(q);
-    for(int j=0;j<q;j++) phi_vec[j] = g_prime(vec_vec_mult(wjs[j], u, (q+m+1)));
+//    printf("hej");
+    for(int j=0; j<q; j++) phi_vec[j] = g_prime(vec_vec_mult(wjs[j], u, (q+m+1)));
+
+//    printf("phi:\n");
+//    for(int j=0;j<q;j++) print_vec(phi_vec, q);
+//    exit(1);
 
     // Update all neurons
     for (int j=0; j<q; j++) {
@@ -123,53 +156,77 @@ void backward(int n) {
         float *soon_enough = vec_mat_mult(Wo, lambda[j], q, (q+m+1));
         float *almost_done = vec_scalar_mult(soon_enough, eta, (q+m+1));
         float *delta_wjs = vec_scalar_mult(almost_done, E, (q+m+1));
+
+//        printf("E:%f\nsoon_enough:\n", E);
+//        print_vec(soon_enough, (q+m+1));
+//        printf("almost_done:\n");
+//        print_vec(almost_done, (q+m+1));
+
+//        printf("(n=%d, j=%d) delta_wjs:\n", n, j);
+//        print_vec(delta_wjs, (q+m+1));
+
         free(soon_enough);
         free(almost_done);
 
         // Apply delta-weights
+
         for (int i=0; i<q; i++) { // Hidden weights
+//            printf("applying delta to hidden weight: %f\n", delta_wjs[i]);
             Wa[j][i] += delta_wjs[i];
         }
+
         for (int i=0; i<(m+1); i++) { // Input weights
+//            printf("applying delta to input weight: %f\n", delta_wjs[i+q]);
             Wb[j][i] += delta_wjs[i+q];
         }
 
         free(delta_wjs);
     }
-
-
-//    exit(1);
+//    printf("--- next up: n=%d\n",n+1);
 
     // Finally, clean up
     free_mat(wjs, q);
     free(u);
 }
 
+void next() {
+    // "Go to" next state
+    free(V);
+    V = V_next;
+    for (int j=0;j<q;j++) {
+        free_mat(lambda[j], q);
+        lambda[j] = lambda_next[j];
+    }
+}
+
 void update_lambda(int j, float *phi_vec, float *u) {
     // Calculate new lambda
     float **product = mat_mat_mult(Wa, lambda[j], q, q, (q+m+1));
+
+//    printf("product:\n");
+//    print_mat(product, q, (q+m+1));
 
     // Add u to only j'th row
     float *added_u = vec_vec_add(product[j], u, (q+m+1));
     free(product[j]);
     product[j] = added_u;
 
-
-//    printf("product:\n");
+//    printf("product after add:\n");
 //    print_mat(product, q, (q+m+1));
-//    exit(1);
 
     // "phi matrix multiplication"
     for (int a=0;a<q; a++) { // row
-        for(int b=0; b<q; b++) { // col
+        for(int b=0; b<(q+m+1); b++) { // col
             product[a][b] *= phi_vec[a];
         }
     }
-    // Phi matrix multiplication
-//    float **almost_done = mat_mat_mult(phi, product, q, q, (q+m+1));
-//    free(product);
-    free_mat(lambda[j], q);
-    lambda[j] = product;
+
+//    printf("product after mult:\n");
+//    print_mat(product, q, (q+m+1));
+
+//    exit(1);
+
+    lambda_next[j] = product;
 }
 
 float g(float x) {
@@ -180,6 +237,8 @@ float g_prime(float x) {
 }
 float h() {
     float E = zeta-O;
+    E *= sdev;
+    E += mean;
     return (pow(E, 2) / 2);
 }
 
@@ -188,11 +247,12 @@ void init() {
     srand(time(NULL));
     rand();
 
-    I = read_patterns(1000, "laser.txt");
+    I = read_patterns(1000, "laser.norm.txt");
 
     xi = malloc((m+1) * sizeof *xi);
     xi[2] = 1; // Add hax node, for threshold
-    V = calloc(q, sizeof *V);
+    V = new_vec_zero(q);
+    V_next = new_vec_zero(q);
 
     Wa = generate_weight_matrix(q,q);
     Wb = generate_weight_matrix(q,(m+1));
@@ -200,11 +260,9 @@ void init() {
 
     lambda = malloc(q * sizeof *lambda);
     lambda_next = malloc(q * sizeof *lambda_next);
-
     for (int j=0; j<q; j++) {
-//        lambda[j] = generate_weight_matrix(q, (q+m+1)); // ? initial values ?
-
-        lambda[j] = new_mat_zero(q, (q+m+1)); // ? initial values ?
+        lambda[j] = new_mat_zero(q, (q+m+1));
+        lambda_next[j] = new_mat_zero(q, (q+m+1));
     }
 
 }
@@ -229,7 +287,7 @@ float **generate_weight_vector(int m) {
     return weights;
 }
 float random_weight() {
-    return -0.01;
+    if (!rand_mode) return 0.01;
     float rando = (((float)rand()/RAND_MAX) * rand_coeff) - rand_d;
     return rando;
 }

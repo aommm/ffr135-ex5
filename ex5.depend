@@ -33,3 +33,20 @@
 	<math.h>
 	<time.h>
 
+1382361013 source:c:\pg\ffr135-ex5\matrix.c
+	"matrix.h"
+
+1382190400 c:\pg\ffr135-ex5\matrix.h
+
+1382377147 source:c:\pg\ffr135-ex5\main.c
+	"main.h"
+
+1382376479 c:\pg\ffr135-ex5\main.h
+	"matrix.h"
+	<stdio.h>
+	<stdlib.h>
+	<windows.h>
+	<stdbool.h>
+	<math.h>
+	<time.h>
+
