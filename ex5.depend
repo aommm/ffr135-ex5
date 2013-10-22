@@ -33,16 +33,17 @@
 	<math.h>
 	<time.h>
 
-1382444116 source:c:\pg\ffr135-ex5\matrix.c
+1382459719 source:c:\pg\ffr135-ex5\matrix.c
 	"matrix.h"
 
-1382438766 c:\pg\ffr135-ex5\matrix.h
+1382458322 c:\pg\ffr135-ex5\matrix.h
 	<stdlib.h>
+	<stdio.h>
 
-1382444349 source:c:\pg\ffr135-ex5\main.c
+1382459874 source:c:\pg\ffr135-ex5\main.c
 	"main.h"
 
-1382437660 c:\pg\ffr135-ex5\main.h
+1382445622 c:\pg\ffr135-ex5\main.h
 	"matrix.h"
 	<stdio.h>
 	<stdlib.h>

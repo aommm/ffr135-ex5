@@ -22,7 +22,7 @@ void next();
 // Init
 float *read_patterns(int p, char *file_name);
 float **generate_weight_matrix(int m, int n);
-float **generate_weight_vector(int m);
+float *generate_weight_vector(int m);
 float random_weight();
 
 // Backward
