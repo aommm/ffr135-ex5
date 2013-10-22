@@ -4,10 +4,10 @@
 int m = 2; // dimension of input units vector
 int q = 5; // dimension of hidden units vector
 int p_t = 1000; // number of patterns in training set
+
 bool rand_mode = true;
-float rand_coeff = 1;
-float rand_d = 0.5;// -0.15;?
-float eta = 0.0;
+float rand_coeff = 0.501;
+float eta = 0.1;
 
 int n_max = 20000;
 
@@ -22,7 +22,7 @@ float O;        // Output unit actual value
 
 float **Wa; // hidden-hidden weights
 float **Wb; // input-hidden weights
-float *Wo;  // output weights
+float *Wc;  // output weights
 
 float ***lambda; // Change-in-activation-states-thingy
 float ***lambda_next; // Change-in-activation-states-thingy
@@ -31,9 +31,11 @@ float sdev = 46.8754;
 float mean = 59.894;
 
 int main() {
+    printf("helo");
     init();
     training();
 //    simulate(1);
+    // return 0;
 }
 
 void training() {
@@ -50,33 +52,25 @@ void training() {
         zeta = I[p+2];
         p++;
 
-//        printf("(n=%d) Wa:\n", n);
-//        print_mat(Wa, q, q);
-//
-//        printf("Wb:\n");
-//        print_mat(Wb, q, (m+1));
-
         forward(n);
         H_sum += h();
         fprintf(file, "%d\t%f\n", n, (H_sum/n));
+        printf("n: %d", n);
         backward(n);
         next();
 
         if (n%100==0) {
-            printf("hej! V:\n");
-//            print_vec(V, q);
-
+//            printf("hej! V:\n");
+            // print_vec(V, q);
+            if (0) printf("helo delo");
 //            printf("n: %d, gdiff: %f\n", n, greatest_diff(V, q));
 
         }
-//        printf("n:%d, O:%f\n", n, O);
-//        print_vec(V_next, q);
-
 
     }
-    printf("Energy: %f\n", (H_sum/n_max));
+    printf("Energy: %f, last output: %f\n", (H_sum/n_max), (O*sdev+mean));
 
-
+    // system("pause");
     fclose(file);
 }
 
@@ -117,27 +111,27 @@ void simulate(int k_max) {
 void forward(int n) {
 
     V_next = new_vec_zero(q);
+    if (V_next == NULL) {perror("ERROR: V_next malloc failed"); exit(1);}
     // Calculate hidden states
     for (int j=0;j<q;j++) {
         V_next[j] = g(vec_vec_mult(Wa[j], V, q) + vec_vec_mult(Wb[j], xi, (m+1)));
-//        printf("asdf %f %f\n", vec_vec_mult(Wa[j], V, q), vec_vec_mult(Wb[j], xi, (m+1)));
     }
 
     // Calculate output state
-    O = vec_vec_mult(Wo, V, q);
-
-
+    O = vec_vec_mult(Wc, V, q);
 
 }
 
 void backward(int n) {
     // Perform concatenations of weights and states
     float **wjs = malloc(q * sizeof *wjs);
+    if (wjs == NULL) {perror("ERROR: wjs malloc failed"); exit(1);}
     for(int j=0;j<q;j++) wjs[j] = vec_vec_concat(Wa[j], Wb[j], q, (m+1));
     float *u = vec_vec_concat(V, xi, q, (m+1));
 
     // Use vector instead of diagonal matrix
     float *phi_vec = new_vec(q);
+    if (phi_vec == NULL) {perror("ERROR: phi_vec malloc failed"); exit(1);}
 //    printf("hej");
     for(int j=0; j<q; j++) phi_vec[j] = g_prime(vec_vec_mult(wjs[j], u, (q+m+1)));
 
@@ -153,7 +147,7 @@ void backward(int n) {
         // Calculate error
         float E = zeta - O;
         // Calculate delta-weights
-        float *soon_enough = vec_mat_mult(Wo, lambda[j], q, (q+m+1));
+        float *soon_enough = vec_mat_mult(Wc, lambda[j], q, (q+m+1));
         float *almost_done = vec_scalar_mult(soon_enough, eta, (q+m+1));
         float *delta_wjs = vec_scalar_mult(almost_done, E, (q+m+1));
 
@@ -207,9 +201,9 @@ void update_lambda(int j, float *phi_vec, float *u) {
 //    print_mat(product, q, (q+m+1));
 
     // Add u to only j'th row
-    float *added_u = vec_vec_add(product[j], u, (q+m+1));
+    float *jth_row = vec_vec_add(product[j], u, (q+m+1));
     free(product[j]);
-    product[j] = added_u;
+    product[j] = jth_row;
 
 //    printf("product after add:\n");
 //    print_mat(product, q, (q+m+1));
@@ -250,27 +244,35 @@ void init() {
     I = read_patterns(1000, "laser.norm.txt");
 
     xi = malloc((m+1) * sizeof *xi);
+    if (xi == NULL) {perror("ERROR: xi malloc failed!"); exit(1);}
     xi[2] = 1; // Add hax node, for threshold
     V = new_vec_zero(q);
-    V_next = new_vec_zero(q);
+    if (V == NULL) {perror("ERROR: V malloc failed"); exit(1);}
 
     Wa = generate_weight_matrix(q,q);
     Wb = generate_weight_matrix(q,(m+1));
-    Wo = generate_weight_vector(q);
+    Wc = generate_weight_vector(q);
 
     lambda = malloc(q * sizeof *lambda);
+    if (lambda == NULL) {perror("ERROR: lambda malloc failed"); exit(1);}
     lambda_next = malloc(q * sizeof *lambda_next);
+    if (lambda_next == NULL) {perror("ERROR: lambda_next malloc failed"); exit(1);}
     for (int j=0; j<q; j++) {
         lambda[j] = new_mat_zero(q, (q+m+1));
+        if (lambda[j] == NULL) {perror("ERROR: lambda[j] malloc failed"); exit(1);}
         lambda_next[j] = new_mat_zero(q, (q+m+1));
+        if (lambda_next[j] == NULL) {perror("ERROR: lambda_next[j] malloc failed"); exit(1);}
     }
 
 }
 
 float **generate_weight_matrix(int m, int n) {
-    float **weights = malloc(m * sizeof(float*));
-    for (int i=0; i<m; i++)
-        weights[i] = malloc(n * sizeof(float));
+    float **weights = malloc(m * sizeof *weights);
+    if (weights == NULL) {perror("ERROR: weights mat malloc failed"); exit(1);}
+    for (int i=0; i<m; i++) {
+        weights[i] = malloc(n * sizeof *weights[i]);
+        if (weights[i] == NULL) {perror("ERROR: weights[i] mat malloc failed"); exit(1);}
+    }
 
     for (int i=0;i<m; i++) {
         for (int j=0;j<n; j++) {
@@ -280,7 +282,8 @@ float **generate_weight_matrix(int m, int n) {
     return weights;
 }
 float **generate_weight_vector(int m) {
-    float *weights = malloc(m * sizeof(float));
+    float *weights = malloc(m * sizeof *weights);
+    if (weights == NULL) {perror("ERROR: weights vec malloc failed"); exit(1);}
     for (int i=0;i<m; i++) {
         weights[i] = random_weight();
     }
@@ -288,7 +291,7 @@ float **generate_weight_vector(int m) {
 }
 float random_weight() {
     if (!rand_mode) return 0.01;
-    float rando = (((float)rand()/RAND_MAX) * rand_coeff) - rand_d;
+    float rando = (((float)rand()/RAND_MAX) * rand_coeff) - (rand_coeff/2);
     return rando;
 }
 
@@ -300,7 +303,8 @@ float *read_patterns(int p, char *file_name) {
         printf("Error opening file!\n");
         exit(1);
     }
-    float *pat = malloc(sizeof(float) * p);
+    float *pat = malloc(p * sizeof *pat);
+    if (pat == NULL) {perror("ERROR: pat malloc failed"); exit(1);}
     for(int i=0;i<p;i++) {
         fscanf(f, "%f", &pat[i]);
     }

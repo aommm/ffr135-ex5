@@ -1,6 +1,8 @@
 #ifndef MATRIX_H_INCLUDED
 #define MATRIX_H_INCLUDED
 
+#include <stdlib.h>
+
 // Matrix utility functions
 
 float vec_vec_mult(float *vec1, float *vec2, int d); // (Dot product; scalar)
