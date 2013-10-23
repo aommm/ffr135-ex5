@@ -6,6 +6,7 @@ int q = 5; // dimension of hidden units vector
 int p_t = 1000; // number of patterns
 int p_v = 9093;
 
+bool normalise_data = true;
 bool validation_mode = false;
 bool rand_mode = true;
 
@@ -44,6 +45,8 @@ int main(int argc, char** argv) {
         n_max = atof(argv[3]);
     } if (argc>4) {
         validation_mode = !!atoi(argv[4]);
+        if (validation_mode) printf("asdf %d");
+        exit(1);
     }
 
     init();
@@ -53,7 +56,7 @@ int main(int argc, char** argv) {
     // prrint("\n Wa matrix before:\n");
     // print_mat(initial_a_matrix, q, q);
 
-    training();
+    train();
 
     // float **matrix_a_diff = mat_mat_sub(Wa, initial_a_matrix, q, q);
     // float **matrix_b_diff = mat_mat_sub(Wb, initial_b_matrix, q, (m+1));
@@ -64,11 +67,11 @@ int main(int argc, char** argv) {
     // prrint("\n Wb diff:\n");
     // print_mat(matrix_b_diff, q, (m+1));
 
-   // simulate(1);
+    simulate(1);
     return 0;
 }
 
-void training() {
+void train() {
     int p = 0;
     float H_sum = 0;
     unlink("energy.txt");
@@ -104,7 +107,7 @@ void training() {
         }
 
     }
-    printf("Energy: %f, last output: %f\n", (H_sum/n_max), (O*sdev+mean)); fflush(stdout);
+    printf("Energy: %f, last output: %f\n", (H_sum/n_max), get_O()); fflush(stdout);
 
     // system("pause");
     fclose(file_e);
@@ -114,7 +117,7 @@ void training() {
 void simulate(int k_max) {
 
     char file_name[20];
-    sprintf(file_name, "energy_k%d.txt", k_max);
+    sprintf(file_name, "output_k%d.txt", k_max);
     FILE *file = fopen(file_name, "w");
 
     float *output = new_vec(k_max+2);
@@ -137,10 +140,8 @@ void simulate(int k_max) {
         p++;
 
         forward(n);
-//        O = k+5;
-        fprintf(file, "%d\t%f\n", n, O);
+        fprintf(file, "%f\n", get_O());
         output[k+2] = O;
-
     }
     fclose(file);
 }
@@ -240,10 +241,10 @@ float h() {
     return (pow(E, 2) / 2);
 }
 float get_O() { // Returns unnormalised O value
-    return validation_mode? (O*sdev_v + mean_v) : (O*sdev + mean);
+    return normalise_data ? (validation_mode? (O*sdev_v + mean_v) : (O*sdev + mean)) : O;
 }
 float get_zeta() { // Returns unnormalised O value
-    return validation_mode? (zeta*sdev_v + mean_v) : (zeta*sdev + mean);
+    return normalise_data ? (validation_mode? (zeta*sdev_v + mean_v) : (zeta*sdev + mean)) : zeta;
 }
 
 // Initialise program
@@ -251,7 +252,11 @@ void init() {
     srand(time(NULL));
     rand();
 
-    I = validation_mode? read_patterns(p_v, "laser_cont.norm.txt") : read_patterns(p_t, "laser.norm.txt");
+    if (normalise_data) {
+        I = validation_mode? read_patterns(p_v, "laser_cont.norm.txt") : read_patterns(p_t, "laser.norm.txt");
+    } else {
+        I = validation_mode? read_patterns(p_v, "laser_cont.txt") : read_patterns(p_t, "laser.txt");
+    }
 
     xi = malloc((m+1) * sizeof *xi);
     if (xi == NULL) errror("ERROR: xi malloc failed");

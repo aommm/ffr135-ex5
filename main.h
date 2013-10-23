@@ -12,8 +12,8 @@
 
 // Main parts of program
 void init();
-void training();
-void simulation();
+void train();
+void simulate();
 
 void forward(int n);
 void backward(int n);
