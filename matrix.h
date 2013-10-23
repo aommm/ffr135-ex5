@@ -33,4 +33,7 @@ void free_mat(float **mat, int m);
 void print_mat(float **mat, int m, int n);
 void print_vec(float *vec, int d);
 
+void errror(char *msg);
+void prrint(char *msg);
+
 #endif // MATRIX_H_INCLUDED

@@ -32,6 +32,8 @@ void update_lambda(int j, float *phi_vec, float *u);
 float g(float x);
 float g_prime(float x);
 float h();
+float get_zeta(); // Returns unnormalised version
+float get_O(); // Returns unnormalised version
 
 // Various
 float add_to_file(char *file_name, int i, float f);
